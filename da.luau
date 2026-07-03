@@ -761,9 +761,8 @@ local function mm2_fetchPlayerData()
 end
 
 local function mm2_getPlayerRole(plr)
-	for _, info in ipairs(mm2_currentPlayerData) do
-		local name = info.Name or info.Username or info.PlayerName or info.DisplayName
-		if name and (name == plr.Name or name == plr.DisplayName) then
+	for playerName, info in pairs(mm2_currentPlayerData) do
+		if playerName == plr.Name then
 			return info.Role
 		end
 	end
