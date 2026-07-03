@@ -736,29 +736,24 @@ local MM2 = Window:Tab({
 	Icon = "sword"
 })
 
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GetCurrentPlayerData, PlayerDataChangedEvent
+local GetCurrentPlayerData
 
-local function mm2_InitServices()
+local function mm2_InitRemote()
 	if GetCurrentPlayerData then return true end
 	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	if not Remotes then
-		return false
-	end
-	local Gameplay = Remotes:FindFirstChild("Gameplay")
+	if not Remotes then return false end
+	local Events = Remotes:FindFirstChild("Events")
+	if not Events then return false end
+	local Gameplay = Events:FindFirstChild("Gameplay")
 	if not Gameplay then return false end
 	GetCurrentPlayerData = Gameplay:FindFirstChild("GetCurrentPlayerData")
-	PlayerDataChangedEvent = Gameplay:FindFirstChild("PlayerDataChanged")
-	return GetCurrentPlayerData ~= nil and PlayerDataChangedEvent ~= nil
+	return GetCurrentPlayerData ~= nil
 end
 
-
 local mm2_espEnabled = false
-local mm2_espObjects = {}  
+local mm2_espObjects = {}
 local mm2_currentPlayerData = {}
-local mm2_eventsConnected = false
-
 
 local mm2_roleColors = {
 	Murderer = Color3.fromRGB(255, 0, 0),
@@ -766,49 +761,40 @@ local mm2_roleColors = {
 	Innocent = Color3.fromRGB(0, 255, 0)
 }
 
-
 local function mm2_fetchPlayerData()
-	if not mm2_InitServices() then
+	if not mm2_InitRemote() then
 		mm2_currentPlayerData = {}
 		return
 	end
 	local success, data = pcall(function()
 		return GetCurrentPlayerData:InvokeServer()
 	end)
-	if success and data then
+	if success and type(data) == "table" then
 		mm2_currentPlayerData = data
 	else
 		mm2_currentPlayerData = {}
 	end
 end
 
-
 local function mm2_getPlayerRole(plr)
-	for _, info in pairs(mm2_currentPlayerData) do
-		
-		if (info.Name and info.Name == plr.Name) or
-			(info.Username and info.Username == plr.Name) or
-			(info.PlayerName and info.PlayerName == plr.Name) or
-			(info.DisplayName and info.DisplayName == plr.Name) then
+	for _, info in ipairs(mm2_currentPlayerData) do
+		local name = info.Name or info.Username or info.PlayerName or info.DisplayName
+		if name and (name == plr.Name or name == plr.DisplayName) then
 			return info.Role
 		end
 	end
 	return nil
 end
 
-
 local function mm2_cleanupESP(plr)
 	local data = mm2_espObjects[plr]
 	if data then
-		if data.connection then
-			pcall(function() data.connection:Disconnect() end)
-		end
-		if data.highlight then data.highlight:Destroy() end
-		if data.billboard then data.billboard:Destroy() end
+		pcall(function() data.connection:Disconnect() end)
+		pcall(function() data.highlight:Destroy() end)
+		pcall(function() data.billboard:Destroy() end)
 		mm2_espObjects[plr] = nil
 	end
 end
-
 
 local function mm2_createESP(plr)
 	if plr == player then return end
@@ -822,7 +808,6 @@ local function mm2_createESP(plr)
 	local role = mm2_getPlayerRole(plr)
 	local color = mm2_roleColors[role] or Color3.fromRGB(255, 255, 255)
 
-	
 	local highlight = Instance.new("Highlight")
 	highlight.FillTransparency = 1
 	highlight.OutlineColor = color
@@ -830,7 +815,6 @@ local function mm2_createESP(plr)
 	highlight.Adornee = char
 	highlight.Parent = char
 
-	
 	local billboard = Instance.new("BillboardGui")
 	billboard.Adornee = head
 	billboard.Size = UDim2.new(0, 150, 0, 40)
@@ -852,7 +836,6 @@ local function mm2_createESP(plr)
 	nameLabel.Text = plr.Name .. (role and (" [" .. role .. "]") or "")
 	nameLabel.Parent = frame
 
-	-- Сюда будем обновлять расстояние
 	local distLabel = Instance.new("TextLabel")
 	distLabel.Size = UDim2.new(1, 0, 0, 14)
 	distLabel.Position = UDim2.new(0, 0, 0, 14)
@@ -862,14 +845,12 @@ local function mm2_createESP(plr)
 	distLabel.TextSize = 11
 	distLabel.Parent = frame
 
-	
 	mm2_espObjects[plr] = {
 		highlight = highlight,
 		billboard = billboard,
 		connection = nil
 	}
 
-	
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
 		if not mm2_espEnabled then
@@ -889,7 +870,6 @@ local function mm2_createESP(plr)
 	mm2_espObjects[plr].connection = conn
 end
 
-
 local function mm2_refreshAllESP()
 	for plr, _ in pairs(mm2_espObjects) do
 		mm2_cleanupESP(plr)
@@ -898,7 +878,6 @@ local function mm2_refreshAllESP()
 		mm2_createESP(plr)
 	end
 end
-
 
 local function mm2_startAutoRefresh()
 	task.spawn(function()
@@ -912,67 +891,39 @@ local function mm2_startAutoRefresh()
 	end)
 end
 
-
 local function mm2_enableESP()
-	if not mm2_InitServices() then
+	if not mm2_InitRemote() then
 		WindUI:Notify({
 			Title = "MM2",
-			Content = "This function only works in Murder Mystery 2!",
+			Content = "Remote not found. Are you in Murder Mystery 2?",
 			Duration = 3
 		})
 		return
 	end
 	mm2_fetchPlayerData()
-	
 	for _, plr in ipairs(Players:GetPlayers()) do
 		mm2_createESP(plr)
 	end
-	
 	Players.PlayerAdded:Connect(function(plr)
-		if mm2_espEnabled then
-			mm2_createESP(plr)
-		end
+		if mm2_espEnabled then mm2_createESP(plr) end
 	end)
-	Players.PlayerRemoving:Connect(function(plr)
-		mm2_cleanupESP(plr)
-	end)
-	
+	Players.PlayerRemoving:Connect(function(plr) mm2_cleanupESP(plr) end)
 	mm2_startAutoRefresh()
-	
-	if not mm2_eventsConnected then
-		PlayerDataChangedEvent.OnClientEvent:Connect(function(newData)
-			mm2_currentPlayerData = newData
-			if mm2_espEnabled then
-				mm2_refreshAllESP()
-			end
-		end)
-		mm2_eventsConnected = true
-	end
-
-	
 	if #mm2_currentPlayerData > 0 then
-		print("===== Sample PlayerData entry =====")
-		print(getsyncmodule(mm2_currentPlayerData[1]))
+		print("===== MM2 PlayerData =====")
+		print(getsyncmodule(mm2_currentPlayerData))
 	end
 end
-
 
 local function mm2_disableESP()
-	for plr, _ in pairs(mm2_espObjects) do
-		mm2_cleanupESP(plr)
-	end
+	for plr, _ in pairs(mm2_espObjects) do mm2_cleanupESP(plr) end
 end
-
 
 MM2:Toggle({
 	Title = "MM2 ESP",
 	Callback = function(state)
 		mm2_espEnabled = state
-		if state then
-			mm2_enableESP()
-		else
-			mm2_disableESP()
-		end
+		if state then mm2_enableESP() else mm2_disableESP() end
 	end
 })
 
