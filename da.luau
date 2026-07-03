@@ -737,7 +737,7 @@ local MM2 = Window:Tab({
 })
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GetCurrentPlayerData = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Events"):WaitForChild("Gameplay"):WaitForChild("GetCurrentPlayerData")
+local GetCurrentPlayerData = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Gameplay"):WaitForChild("GetCurrentPlayerData")
 
 local mm2_espEnabled = false
 local mm2_espObjects = {}
