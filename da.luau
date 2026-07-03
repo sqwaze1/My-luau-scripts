@@ -737,19 +737,7 @@ local MM2 = Window:Tab({
 })
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GetCurrentPlayerData
-
-local function mm2_InitRemote()
-	if GetCurrentPlayerData then return true end
-	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	if not Remotes then return false end
-	local Events = Remotes:FindFirstChild("Events")
-	if not Events then return false end
-	local Gameplay = Events:FindFirstChild("Gameplay")
-	if not Gameplay then return false end
-	GetCurrentPlayerData = Gameplay:FindFirstChild("GetCurrentPlayerData")
-	return GetCurrentPlayerData ~= nil
-end
+local GetCurrentPlayerData = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Events"):WaitForChild("Gameplay"):WaitForChild("GetCurrentPlayerData")
 
 local mm2_espEnabled = false
 local mm2_espObjects = {}
@@ -762,10 +750,6 @@ local mm2_roleColors = {
 }
 
 local function mm2_fetchPlayerData()
-	if not mm2_InitRemote() then
-		mm2_currentPlayerData = {}
-		return
-	end
 	local success, data = pcall(function()
 		return GetCurrentPlayerData:InvokeServer()
 	end)
@@ -892,14 +876,6 @@ local function mm2_startAutoRefresh()
 end
 
 local function mm2_enableESP()
-	if not mm2_InitRemote() then
-		WindUI:Notify({
-			Title = "MM2",
-			Content = "Remote not found. Are you in Murder Mystery 2?",
-			Duration = 3
-		})
-		return
-	end
 	mm2_fetchPlayerData()
 	for _, plr in ipairs(Players:GetPlayers()) do
 		mm2_createESP(plr)
