@@ -21,5 +21,5 @@ Window:Tag({
     Title = "v0.0.0",
     Icon = "github",
     Color = Color3.fromHex("#30ff6a"),
-    Radius = 0, -- from 0 to 13
+    Radius = 12, -- from 0 to 13
 })
