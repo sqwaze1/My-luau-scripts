@@ -17,3 +17,9 @@ local Window = WindUI:CreateWindow({
 	ToggleKey = Enum.KeyCode.RightShift
 })
 
+Window:Tag({
+    Title = "v0.0.0",
+    Icon = "github",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 0, -- from 0 to 13
+})
