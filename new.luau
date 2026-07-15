@@ -18,8 +18,7 @@ local Window = WindUI:CreateWindow({
 })
 
 Window:Tag({
-    Title = "v0.0.0",
-    Icon = "github",
+    Title = "v1.6.6",
     Color = Color3.fromHex("#30ff6a"),
-    Radius = 12, -- from 0 to 13
+    Radius = 0, -- from 0 to 13
 })
