@@ -1,7 +1,3 @@
--- WindUI loader
-
-
-
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
 
